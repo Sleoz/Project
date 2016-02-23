@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>MinistryOfWeb - Lucas Bromblet</title>
+		<link rel="shortcut icon" type="image/x-icon" href="images/Mushroom_bee.png" />
+		<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+		<link rel="stylesheet" href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css" />
+		<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+		<script type="text/javascript" src="Communes34.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+		<script src="http://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
+		<script>
+		function initialize() {
+		
+		var point = new L.LatLng(43.61 , 3.87);
+		
+		var castelnau = new L.Marker ([43.63,3.90]);
+		castelnau.bindPopup("Point : " + castelnau.getLatLng());
+		castelnau.on('dblclick',function(e) {
+			map.setView(castelnau.getLatLng(),map.getZoom()+1);
+		});
+		var montpellier =new L.Marker ([43.61,3.87]);
+		montpellier.bindPopup("Point : " + montpellier.getLatLng());
+		montpellier.on('dblclick',function(e) {
+			map.setView(montpellier.getLatLng(),map.getZoom()+1);
+		});
+		var juvignac = new L.Marker ([43.61,3.81]);
+		juvignac.bindPopup("Point : " + juvignac.getLatLng());
+		juvignac.on('dblclick',function(e) {
+			map.setView(juvignac.getLatLng(),map.getZoom()+1);
+		});
+		var cities = L.layerGroup([castelnau, montpellier, juvignac]);
+		
+		var options = {	center: point,
+						zoom: 12,
+						layers: [cities],
+						zoomControl : false};			
+						
+		var map = new L.Map( 'mymap' , options);
+		
+		map.addControl(L.control.zoom({position : 'bottomright'})); //mis à false dans les options puis ajouté à l'aide d'un control.
+				
+		var geojson = com34;
+		var myStyle = {"color":"black","weight":2,"opacity":1,"fillOpacity":0.1,"clickable":"false"};
+		
+		var Com = L.geoJson(geojson, {
+			style: myStyle,
+			onEachFeature: function (feature, layer) {
+				layer.bindPopup(feature.properties["NOM_COMM"]);
+				//bind click
+				layer.on('click', function (e) {
+					// e = event
+					console.log(e);
+					// You can make your ajax call declaration here
+					//...
+				});
+			}
+		});
+		
+		//map.addLayer(Com);
+			
+		var overlayMaps = {"GeoJSon" : Com,"Villes": cities};
+
+		L.control.layers(null,overlayMaps,{position:'topleft'}).addTo(map);
+		
+		var url = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+		var osm = new L.TileLayer(	url,
+									{maxZoom:18});
+		map.addLayer(osm);
+		
+		map.addControl(L.control.scale({	position:'bottomright',
+											imperial:false}));
+		
+		var polyline = L.polyline([[43.612189580367655,3.868281841278076],
+								[43.611948773531054,3.871977925300598],
+								[43.61070976827406,3.871902823448181]],
+								{color:"#ff7800",
+								weight:5}).addTo(map);
+		
+		map.doubleClickZoom.disable();
+		
+		function dblclick(){
+		console.log("dlbclick");
+		}
+		map.on('dblclick', dblclick);
+		
+		
+		var poiIcon = L.Icon.extend({
+		options: {
+        iconSize: [16,16],
+        iconAnchor: [8,8],
+		}
+		});
+		
+		var redIcon = new poiIcon({iconUrl:'images/Mushroom_red.png'});
+		var greenIcon   = new poiIcon({iconUrl:'images/Mushroom_green.png'});
+		var beeIcon  = new poiIcon({iconUrl:'images/Mushroom_bee.png'});
+		
+		$(".drag").draggable({
+				helper: 'clone',
+				containment: 'mymap',
+				start: function(event, ui) {
+					$('#menu').fadeTo('fast', 0.6, function() {});
+				},
+				stop: function(event, ui) {
+					$('#menu').fadeTo('fast', 1.0, function() {});
+					
+					var options = {
+						pid: guid(),
+						type: ui.helper.attr('type'),
+						icon: eval(ui.helper.attr('type') + 'Icon'),
+						draggable: true
+					};
+					
+					insertPoint(
+						map.containerPointToLatLng([ui.offset.left+8, ui.offset.top+8]),
+						options
+					);
+				}
+		});
+				// INSERT point
+		function insertPoint(position,options) {
+			var point = L.marker(position,options).addTo(map);
+			point.bindPopup("Coordonnees : "+point.getLatLng());
+			pointsMarker.push(point);
+		}
+		
+		function S4() {
+			return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+		}
+		function guid() {
+			return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+		}
+/////////////CERCLE////////////		
+		
+		function circling(event) {
+		var e = event;
+		console.log("circling()");
+		var point = new L.LatLng(e.latlng.lat, e.latlng.lng);
+		radius =prompt("Rayon du cercle : ");
+		var circle = L.circle([e.latlng.lat, e.latlng.lng],radius, {color:'red',fillColor:'#f03',fillOpacity:0.5}).addTo(map);
+		}
+		
+		function circle(){console.log("circle()");map.on('dblclick', circling);}
+		
+		function discircle(){console.log("discircle()");map.off('dblclick',circling);}
+		
+		if ($('#option1').is(':checked')){
+			circle();}
+		else{
+			discircle();}
+		
+		$('#option1').change(function(){
+			if (this.checked){
+				circle();
+				dispoly();
+				dismark();}
+			else{
+				discircle();}
+		});
+		
+////////////POLYGONE////////////
+		var polylines = [];
+		var pointsPoly = [];
+		var markerPoly = [];
+		
+		var iconRed = L.icon({
+		iconUrl: 'images/Mushroom_red.png',
+		iconSize: [16, 16],
+		iconAnchor: [8, 16],
+		popupAnchor: [0, -13],
+		});
+		
+		var iconBee = L.icon({
+		iconUrl: 'images/Mushroom_bee.png',
+		iconSize: [16, 16],
+		iconAnchor: [8, 16],
+		popupAnchor: [0, -13],
+		});
+		
+		var iconBlue = L.icon({
+		iconUrl: 'images/Mushroom_blue.png',
+		iconSize: [16, 16],
+		iconAnchor: [8, 16],
+		popupAnchor: [0, -13],
+		});
+		
+		var iconGreen = L.icon({
+		iconUrl: 'images/Mushroom_green.png',
+		iconSize: [16, 16],
+		iconAnchor: [8, 16],
+		popupAnchor: [0, -13],
+		});
+
+		
+		function polygling(event){
+		var e = event;
+		console.log("polygling()");
+		map.removeLayer(markerPoly[markerPoly.length-1]);
+		pointsPoly.push(pointsPoly[0]);
+		var polylineClick = L.polyline(pointsPoly,{color:"#ff7800",weight:5}).addTo(map);
+		polylines.push(polylineClick);
+		pointsPoly = [];
+		}
+		
+		function pointspolygling(event){
+		var e = event;
+		console.log("pointspolygling()");
+		var point = new L.LatLng(e.latlng.lat, e.latlng.lng)
+		pointsPoly.push(point);
+		var mark = new L.Marker(point,{icon: ( polylines.length%2 ? markerPoly.length%2 ? iconRed:iconBee : markerPoly.length%2 ? iconBlue:iconGreen)});
+		mark.bindPopup("Coordonnees : "+mark.getLatLng());
+		cities.addLayer(mark);
+		markerPoly.push(mark);
+		}
+		
+		function poly(){console.log("poly()");map.on('dblclick', polygling);map.on('click', pointspolygling)}
+		
+		function dispoly(){console.log("dispoly()");map.off('dblclick',polygling);map.off('click', pointspolygling)}
+		
+		if ($('#option2').is(':checked')){
+			poly();}
+		else{
+			dispoly();}
+		
+		$('#option2').change(function(){
+			if (this.checked){
+				poly();
+				discircle();
+				dismark();}
+			else{
+				dispoly();}
+		});	
+
+//remove polygones
+		$('#rmpoly').click(function(){
+			for(i in polylines){
+				map.removeLayer(polylines[i]);
+			}
+			for(i in markerPoly){
+				map.removeLayer(markerPoly[i]);
+			}
+		});
+		
+		$('#reloadpoly').click(function(){
+			for(i in polylines){
+				map.addLayer(polylines[i]);
+			}
+			for(i in markerPoly){
+				map.addLayer(markerPoly[i]);
+			}
+		});
+		
+		
+//////////////MARKER/////////////
+		
+		var pointsMarker = [];
+		
+		function marking(event) {
+		var e = event;
+		console.log("marking()");
+		var point = new L.LatLng(e.latlng.lat, e.latlng.lng)
+		pointsMarker.push(point);
+		var mark = new L.Marker(point);
+		mark.bindPopup("Coordonnees : "+mark.getLatLng());
+		mark.on('dblclick',function(e) {
+			map.setView(e.latlng,map.getZoom()+1);
+		});
+		cities.addLayer(mark);
+		}
+		
+		function mark(){console.log("mark()");map.on('click', marking);}
+		
+		function dismark(){console.log("dismark()");map.off('click',marking);}
+		
+		if ($('#option3').is(':checked')){
+			mark();}
+		else{
+			dismark();}
+		
+		$('#option3').change(function(){
+			if (this.checked){
+				mark();
+				dispoly();
+				discircle();}
+			else{
+				dismark();}
+		});
+		
+		
+		
+		/*var marker = new L.Marker (point);
+		marker.bindPopup("Point : " + point);
+		map.addLayer(marker);*/
+		}
+		</script>
+		
+	</head>
+	<body onload="initialize();">
+		<div id="menu" style="position: absolute;top: 80px;left: 15px;width: 20%;min-height:1%;float: left; z-index: 1000;background-color:white;">
+		~~ Menu ~~<br/>
+		<label><input type="radio" name="radioMenu" id="option1" value="circle">Tracer un cercle (double clic)</label><br>
+		<label><input type="radio" name="radioMenu" id="option2" value="poly">Tracer un polygone (clic pour les points, double clic pour tracer)</label><br>
+		<label><input type="radio" name="radioMenu" id="option3" value="marker">Marker<br/></label>
+		<div id="box">Drag Marker on the map: 
+		<span class="poi-type"><img class="drag" type="red" src="images/Mushroom_red.png" alt="TREE: red" /></span>
+		<span class="poi-type"><img class="drag" type="green" src="images/Mushroom_green.png" alt="POI: green" /></span>
+		<span class="poi-type"><img class="drag" type="bee" src="images/Mushroom_bee.png" alt="POI: bee" /></span>
+		</div>
+		<input id="rmpoly" type="button" value="Enlever les polygones"/>
+		<input id="reloadpoly" type="button" value="Remettre les polygones"/>
+		
+		</div>
+		<div id="mymap" style="position: absolute;top: 0;left: 0;width: 100%;height: 100%;float:left;"></div>
+	</body>
+</html>
